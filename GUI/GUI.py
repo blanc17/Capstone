@@ -10,6 +10,25 @@ import Drawing as dc
 file_name = ''
 draw = dc.Drawing()
 
+#Definition for painting
+def paint(event, canvas):
+
+    x1, y1 = (event.x-1),(event.y-1)
+    x2, y2 = (event.x+1),(event.y+1)
+    canvas.create_oval(x1, y1, x2, y2, fill = 'black')
+    
+
+#Definition for drawing on the canvas
+def drawing(event):
+
+    global draw
+
+    if draw.medium == 'pen':
+        
+        print('drawing')
+
+    return
+
 #Definition for getting the svg file
 def get_svg(file):
 
@@ -23,6 +42,11 @@ def new_file():
 
     canvas = tk.Canvas(frm_canvas, bg='white', width=736, height=900)
     canvas.grid(row=0, column=0, sticky='nesw')
+
+    #bind events to clicking on the canvas
+    points = [0,0,736, 900/2,0,900]
+
+    canvas.bind('<B1-Motion>', lambda event: paint(event, canvas))
 
     return
 
