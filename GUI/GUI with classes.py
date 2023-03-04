@@ -36,8 +36,13 @@ class windows(tk.Tk):
         #create a large generic frame for the main window
         # self.container = Drawing(self)
         # self.container.pack(side='top', fill='both',expand=True)
-        self.canvas = Drawing2(self)
-        self.container = self.canvas.canvas
+        self.container = tk.Frame(self)
+        # self.container.configure(bg='white')
+        self.container.pack(side='top', fill='both',expand=True)
+        # self.frm_can.pack(side='top', fill='both',expand=True)
+        self.canvas = Drawing(self.container, self)
+        self.canvas.pack(side='top', fill='both',expand=True)
+        # self.container = self.canvas.canvas
 
         #create a button for packing
         self.btn_plt = tk.Button()
@@ -75,6 +80,22 @@ class windows(tk.Tk):
     def draw_file(self):
         print('Drawing')
     
+    def open(self):
+        #print the image
+        print(self.file)
+        print(self.image)
+        img = Image.open(self.image)
+        pimg = ImageTk.PhotoImage(img)
+        #With label
+        # label = tk.Label(main.container, image=pimg)
+        # label.image = pimg
+        # label.grid(row=0, column=0, sticky='nesw')
+        # main.update()
+        #with canvas
+        self.canvas.create_image(0,0,anchor=tk.NW, image=pimg)
+        self.canvas.image = pimg
+        self.update()
+
       
 #Classes for file menu
 class New():
@@ -105,15 +126,16 @@ class Open():
             main.image = main.file
     
         #print the image
+        print(main.file)
+        print(main.image)
         img = Image.open(main.image)
         pimg = ImageTk.PhotoImage(img)
-        main.container.create_image(10, 10, anchor=tk.NW,image=pimg)
-        # img = Image.open(main.image)
-        # pimg = ImageTk.PhotoImage(img)
-        # label = tk.Label(main.container, image=pimg)
-        # label.pack(anchor='center')
-        main.container.update()
-        main.update()
+
+        #with canvas
+        main.canvas.create_image(0,0,anchor=tk.NW, image=pimg)
+        main.canvas.image = pimg
+        #main.update()
+        
 
 
 class Save():
@@ -124,10 +146,10 @@ class Save():
 
 #Class for canvas frame
 class Drawing(tk.Canvas):
-    def __init__(self, parent:windows):
+    def __init__(self, parent:tk.Frame, main:windows):
         tk.Canvas.__init__(self, parent)
         self.configure(bg='white')
-        self.bind('<B1-Motion>',lambda event: self.paint(event, parent))
+        self.bind('<B1-Motion>',lambda event: self.paint(event, main))
     
     def paint(self, event:tk.Event, parent:windows):
         x1, y1 = (event.x-1),(event.y-1)
@@ -139,7 +161,7 @@ class Drawing(tk.Canvas):
 
 #Class for canvas frame
 class Drawing2():
-    def __init__(self, parent:windows):
+    def __init__(self, parent:tk.Frame):
         self.canvas = tk.Canvas(parent, bg='white')
         self.canvas.pack(side='top', fill='both',expand=True)
         self.canvas.bind('<B1-Motion>',lambda event: self.paint(event, parent))
