@@ -15,7 +15,11 @@ def paint(event, canvas):
 
     x1, y1 = (event.x-1),(event.y-1)
     x2, y2 = (event.x+1),(event.y+1)
-    canvas.create_oval(x1, y1, x2, y2, fill = 'black')
+    global draw
+    if draw.medium == 'eraser':
+            canvas.create_oval(x1, y1, x2, y2, fill = 'white', outline='white')
+    else:
+        canvas.create_oval(x1, y1, x2, y2, fill = 'black')
     
 
 #Definition for drawing on the canvas
@@ -72,11 +76,20 @@ def open_file():
         temp_img = "temp.png"
 
     #print the image
-    img = Image.open(temp_img)
-    pimg = ImageTk.PhotoImage(img)
-    label = tk.Label(frm_canvas, image=pimg)
-    label.image = pimg
-    label.grid(row=0, column=0, sticky='nesw')
+    # img = Image.open(temp_img)
+    # pimg = ImageTk.PhotoImage(img)
+    # label = tk.Label(frm_canvas, image=pimg)
+    # label.image = pimg
+    # label.grid(row=0, column=0, sticky='nesw')
+    # w.update()
+
+    #Create a canvas
+    canvas= tk.Canvas(frm_canvas, width= 600, height= 400)
+    canvas.pack()
+    #Load an image in the script
+    img= ImageTk.PhotoImage(Image.open(temp_img))
+    #Add image to the Canvas Items
+    canvas.create_image(10,10,anchor=tk.NW,image=img)
     w.update()
     #frame = tk.Canvas(frm_canvas, width=size[0], height=size[1])
     #frame.pack()
