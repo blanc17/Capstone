@@ -23,8 +23,8 @@ class windows(tk.Tk):
         #special variables
         self.medium='pen'
         self.file = ''
-        self.image = ''
         self.svg = ''
+        self.image = ''
         
         #creating a menu for the main window
         self.make_menu()
@@ -47,8 +47,13 @@ class windows(tk.Tk):
         #create a button for packing
         self.btn_plt = tk.Button()
         self.make_plot()
-        
 
+    def reset_files(self):
+        self.file = ''
+        self.svg = ''
+        self.image = ''
+
+        
     def make_menu(self):
         
         menu = tk.Menu()
@@ -78,25 +83,14 @@ class windows(tk.Tk):
         print(self.medium)
 
     def draw_file(self):
-        print('Drawing')
+        #if already a .svg file, print
+        if '.svg' in self.file:
+            ad = axidraw.AxiDraw()
+            ad.plot_setup(self.file)
+            ad.plot_run()
+        
     
-    def open(self):
-        #print the image
-        print(self.file)
-        print(self.image)
-        img = Image.open(self.image)
-        pimg = ImageTk.PhotoImage(img)
-        #With label
-        # label = tk.Label(main.container, image=pimg)
-        # label.image = pimg
-        # label.grid(row=0, column=0, sticky='nesw')
-        # main.update()
-        #with canvas
-        self.canvas.create_image(0,0,anchor=tk.NW, image=pimg)
-        self.canvas.image = pimg
-        self.update()
 
-      
 #Classes for file menu
 class New():
     def __init__(self, button:tk.Menu, parent:windows):
@@ -108,6 +102,10 @@ class Open():
     def __init__(self, button:tk.Menu, parent:windows):
         button.add_command(label='Open', command=lambda:self.open_file(parent))
     def open_file(self, main:windows):
+
+        #reset all of the files
+        main.reset_files()
+
         #get the file 
         main.file = askopenfilename(
             filetypes=[
@@ -121,6 +119,7 @@ class Open():
         if '.svg' in main.file:
             #if .svg, get the file and then set the image
             get_svg(main.file)
+            main.svg = main.file
             main.image = 'temp.png'
         else:
             main.image = main.file
@@ -134,7 +133,6 @@ class Open():
         #with canvas
         main.canvas.create_image(0,0,anchor=tk.NW, image=pimg)
         main.canvas.image = pimg
-        #main.update()
         
 
 
