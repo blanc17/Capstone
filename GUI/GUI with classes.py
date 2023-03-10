@@ -34,15 +34,10 @@ class windows(tk.Tk):
         self.make_toolbar()
 
         #create a large generic frame for the main window
-        # self.container = Drawing(self)
-        # self.container.pack(side='top', fill='both',expand=True)
         self.container = tk.Frame(self)
-        # self.container.configure(bg='white')
         self.container.pack(side='top', fill='both',expand=True)
-        # self.frm_can.pack(side='top', fill='both',expand=True)
         self.canvas = Drawing(self.container, self)
         self.canvas.pack(side='top', fill='both',expand=True)
-        # self.container = self.canvas.canvas
 
         #create a button for packing
         self.btn_plt = tk.Button()
@@ -125,8 +120,6 @@ class Open():
             main.image = main.file
     
         #print the image
-        print(main.file)
-        print(main.image)
         img = Image.open(main.image)
         pimg = ImageTk.PhotoImage(img)
 
@@ -147,30 +140,30 @@ class Drawing(tk.Canvas):
     def __init__(self, parent:tk.Frame, main:windows):
         tk.Canvas.__init__(self, parent)
         self.configure(bg='white')
+        self.shapes = []
+        self.bind('<Button-1>', lambda event: self.make_shape(event, main))
         self.bind('<B1-Motion>',lambda event: self.paint(event, main))
     
+    def make_shape(self, event:tk.Event, main:windows):
+        print("in")
+        if main.medium == 'pen':
+            line = Line()
+            self.shapes.append(line)
+            for i in self.shapes:
+                print(i)
+            print(self.shapes)
+
+    #fix painting so it is continuous
     def paint(self, event:tk.Event, parent:windows):
         x1, y1 = (event.x-1),(event.y-1)
         x2, y2 = (event.x+1),(event.y+1)
         if parent.medium == 'eraser':
                 self.create_oval(x1, y1, x2, y2, fill = 'white', outline='white')
         else:
-            self.create_oval(x1, y1, x2, y2, fill = 'black')
+            if self.shapes[-1] == Line:
+                self.shapes[-1].add_point(event.x, event.y)
 
-#Class for canvas frame
-class Drawing2():
-    def __init__(self, parent:tk.Frame):
-        self.canvas = tk.Canvas(parent, bg='white')
-        self.canvas.pack(side='top', fill='both',expand=True)
-        self.canvas.bind('<B1-Motion>',lambda event: self.paint(event, parent))
-    
-    def paint(self, event:tk.Event, parent:windows):
-        x1, y1 = (event.x-1),(event.y-1)
-        x2, y2 = (event.x+1),(event.y+1)
-        if parent.medium == 'eraser':
-                self.canvas.create_oval(x1, y1, x2, y2, fill = 'white', outline='white')
-        else:
-            self.canvas.create_oval(x1, y1, x2, y2, fill = 'black')
+            self.create_oval(x1, y1, x2, y2, fill = 'black')
 
 
 #Classes for toolbar menu
@@ -194,7 +187,17 @@ class Edit():
     def __init__(self, parent:tk.Frame, window:windows):
         pen = tk.Button(parent, text='Edit', command = lambda: window.set_medium('Edit'))
         pen.pack(side='left',fill='none')
-        
+
+#TODO: update      
+class Line():
+    def __init__(self):
+        self.points = []
+
+    def add_point(self, x, y):
+        self.points.append({'x':x, 'y':y})
+
+
+
 
 #run the program
 if __name__ == '__main__':
