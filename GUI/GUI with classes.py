@@ -73,7 +73,8 @@ class windows(tk.Tk):
 
     def make_toolbar(self):
         tools = tk.Frame(self)
-        for B in (Pen, Eraser, Circle, Rectangle, Edit, Color, Width):
+        #for B in (Pen, Eraser, Circle, Rectangle, Edit, Color, Width):
+        for B in (Pen, Eraser, Circle, Rectangle, Color, Width):
             button = B(tools,self)
             self.tools[B] = button
         tools.pack(anchor='n',fill='x')
@@ -192,8 +193,9 @@ class Redo():
 
             #add the image to the canvas
             #TODO: work it out so that all types of shapes can be added
-            if type(last_action) == Line:
-                last_action.remake(parent.canvas)
+            # if type(last_action) == Line:
+            #     last_action.remake(parent.canvas)
+            last_action.remake(parent.canvas)
 
 
 #Class for canvas frame
@@ -220,11 +222,19 @@ class Drawing(tk.Canvas):
             print(self.shapes)
         elif main.medium == 'Eraser':
             #If Eraser is seleceted, erase lines
-            eraser = Erase(main)
+            eraser = Erase()
             self.shapes.append(eraser)
             for i in self.shapes:
                 print(i)
             print(self.shapes)
+        elif main.medium == 'Circle':
+            #If circle, then make an oval
+            oval = Oval(main, event.x, event.y)
+            self.shapes.append(oval)
+            for i in self.shapes:
+                print(i)
+            print(self.shapes)
+
 
     #fix painting so it is continuous
     def paint(self, event:tk.Event, parent:windows):
@@ -237,13 +247,18 @@ class Drawing(tk.Canvas):
                 self.make_shape(event, parent)
             else:
                 if type(self.shapes[-1]) == Erase:
-                    self.shapes[-1].add_point(event.x, event.y, self)
+                    self.shapes[-1].add_point(event.x, event.y, self, parent)
 
                 elif type(self.shapes[-1]) == Line:
-                        self.shapes[-1].add_point(event.x, event.y, self, parent)
+                    self.shapes[-1].add_point(event.x, event.y, self, parent)
+                elif type(self.shapes[-1]) == Oval:
+                    print('in')
+                    self.shapes[-1].make_oval(event.x, event.y, self, parent)
 
     def end_shape(self, event:tk.Event, parent:windows):
         if type(self.shapes[-1]) == Erase:
+            self.shapes[-1].end = True
+        elif type(self.shapes[-1]) == Line:
             self.shapes[-1].end = True
 
 #Classes for toolbar menu
@@ -319,12 +334,11 @@ class Line():
 
             self.lines.append(line)
 
-
-
 class Erase():
     def __init__(self):
         self.points = []
         self.lines = []
+        self.width = 1
         self.end = False
 
     def add_point(self, x, y, canvas: Drawing, main:windows):
@@ -332,9 +346,52 @@ class Erase():
         if len(self.points) != 0:
             x0, y0 = self.points[-1]['x'], self.points[-1]['y']
             line = canvas.create_line(x0, y0, x, y, fill='white', width=main.width)
+            self.width = main.width
             self.lines.append(line)
 
         self.points.append({'x': x, 'y': y})
+
+    def remake(self, canvas:Drawing):
+        #get the first points
+        x, y = self.points[0]['x'], self.points[0]['y']
+
+        #iterate over all of the points and make a line for each
+        for i in self.points[1:]:
+            x0, y0 = i['x'], i['y']
+            #create the line
+            line = canvas.create_line(x0, y0, x, y, fill='white', width=self.width)
+            #Update the intitial x and y
+            x, y = x0, y0
+
+            self.lines.append(line)
+
+class Oval():
+    def __init__(self, main:windows, x:int, y:int):
+        self.start = {'x':x, 'y':y}
+        self.lines = []
+        self.end = {'x':x, 'y':y}
+        self.color = main.color
+        self.width = main.width
+
+    def make_oval(self, x, y, canvas: Drawing, main:windows):
+        #delete current line
+        if self.lines is not []:
+            canvas.delete(self.lines)
+            self.lines = []
+        x0, y0 = self.start['x'], self.start['y']
+        oval = canvas.create_oval(x0, y0, x, y, outline=self.color, width=self.width)
+
+        self.lines.append(oval)
+
+        self.end['x'], self.end['y'] = x, y
+
+    def remake(self, canvas:Drawing):
+        x, y = self.start['x'], self.start['y']
+        x0, y0 = self.end['x'], self.end['y']
+        oval = canvas.create_oval(x0, y0, x, y, outline=self.color, width=self.width)
+        self.lines.append(oval)
+        
+    
 
 #run the program
 if __name__ == '__main__':
