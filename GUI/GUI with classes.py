@@ -234,6 +234,13 @@ class Drawing(tk.Canvas):
             for i in self.shapes:
                 print(i)
             print(self.shapes)
+        elif main.medium == 'Rectangle':
+            #If square, then make a rectangle
+            rect = Rect(main, event.x, event.y)
+            self.shapes.append(rect)
+            for i in self.shapes:
+                print(i)
+            print(self.shapes)
 
 
     #fix painting so it is continuous
@@ -252,8 +259,9 @@ class Drawing(tk.Canvas):
                 elif type(self.shapes[-1]) == Line:
                     self.shapes[-1].add_point(event.x, event.y, self, parent)
                 elif type(self.shapes[-1]) == Oval:
-                    print('in')
                     self.shapes[-1].make_oval(event.x, event.y, self, parent)
+                elif type(self.shapes[-1]) == Rect:
+                    self.shapes[-1].make_rect(event.x, event.y, self, parent)
 
     def end_shape(self, event:tk.Event, parent:windows):
         if type(self.shapes[-1]) == Erase:
@@ -297,7 +305,7 @@ class Width():
         m.insert(0, '1')
         frame.pack(side='left',fill='none')
 
-
+#classes for shapes drawn
 class Line():
     def __init__(self):
         self.points = []
@@ -333,7 +341,6 @@ class Line():
             x, y = x0, y0
 
             self.lines.append(line)
-
 class Erase():
     def __init__(self):
         self.points = []
@@ -364,7 +371,6 @@ class Erase():
             x, y = x0, y0
 
             self.lines.append(line)
-
 class Oval():
     def __init__(self, main:windows, x:int, y:int):
         self.start = {'x':x, 'y':y}
@@ -390,8 +396,32 @@ class Oval():
         x0, y0 = self.end['x'], self.end['y']
         oval = canvas.create_oval(x0, y0, x, y, outline=self.color, width=self.width)
         self.lines.append(oval)
-        
-    
+class Rect():
+    def __init__(self, main:windows, x:int, y:int):
+        self.start = {'x':x, 'y':y}
+        self.lines = []
+        self.end = {'x':x, 'y':y}
+        self.color = main.color
+        self.width = main.width
+
+    def make_rect(self, x, y, canvas: Drawing, main:windows):
+        #delete current line
+        if self.lines is not []:
+            canvas.delete(self.lines)
+            self.lines = []
+        x0, y0 = self.start['x'], self.start['y']
+        rect = canvas.create_rectangle(x0, y0, x, y, outline=self.color, width=self.width)
+
+        self.lines.append(rect)
+
+        self.end['x'], self.end['y'] = x, y
+
+    def remake(self, canvas:Drawing):
+        x, y = self.start['x'], self.start['y']
+        x0, y0 = self.end['x'], self.end['y']
+        rect = canvas.create_rectangle(x0, y0, x, y, outline=self.color, width=self.width)
+        self.lines.append(rect)
+
 
 #run the program
 if __name__ == '__main__':
