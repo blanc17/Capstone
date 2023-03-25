@@ -62,6 +62,12 @@ class windows(tk.Tk):
             M(file, self)
         menu.add_cascade(label='File', menu=file)
 
+        #add edit button
+        edit = tk.Menu(menu, tearoff=0)
+        for M in (Undo, Redo):
+            M(edit, self)
+        menu.add_cascade(label='Edit', menu=edit)
+
         #add the menu to the window
         self.config(menu=menu)
 
@@ -85,13 +91,6 @@ class windows(tk.Tk):
         self.color = "#" + color.partition("#")[2]
 
     def set_width(self, event:tk.Event, entry:tk.Entry):
-        print('in')
-        # self.width = entry.get()
-        # print(self.width)
-        # print(entry.get())
-        # print(type(entry.get()))
-        # print(event.char)
-        # print(type(event.char))
 
         #remove letters
         num = re.sub("[^0-9]", "", entry.get())
@@ -102,8 +101,6 @@ class windows(tk.Tk):
         #update entry
         entry.delete(0, tk.END)
         entry.insert(0, num)
-        print(self.width)
-
 
 
     def draw_file(self):
@@ -164,23 +161,65 @@ class Save():
     def save_file(self):
         print('Save file')
 
+class Undo():
+    def __init__(self, button:tk.Menu, parent:windows):
+        button.add_command(label='Undo', command =lambda:self.undo_action(parent))
+    def undo_action(self, parent:windows):
+        if len(parent.canvas.shapes) > 0:
+            #Get the last action and remove it from the list
+            last_action = parent.canvas.shapes.pop(-1)
+
+            #Make a copy of the last action and add it to the redo list
+            parent.canvas.redo.append(last_action)
+
+            #delete the image from the canvas
+            for l in last_action.lines:
+                parent.canvas.delete(l)
+
+            
+            
+
+class Redo():
+    def __init__(self, button:tk.Menu, parent:windows):
+        button.add_command(label='Redo', command=lambda:self.redo_action(parent))
+    def redo_action(self, parent:windows):
+        if len(parent.canvas.redo) > 0:
+            #get the last action and remove it from the list
+            last_action = parent.canvas.redo.pop(-1)
+
+            #make a copy of the last action and add it to the undo list
+            parent.canvas.shapes.append(last_action)
+
+            #add the image to the canvas
+            #TODO: work it out so that all types of shapes can be added
+            if type(last_action) == Line:
+                last_action.remake(parent.canvas)
+
+
 #Class for canvas frame
 class Drawing(tk.Canvas):
     def __init__(self, parent:tk.Frame, main:windows):
         tk.Canvas.__init__(self, parent)
         self.configure(bg='white')
         self.shapes = []
+        self.redo = []
         self.bind('<Button-1>', lambda event: self.make_shape(event, main))
-        self.bind('<B1-Motion>',lambda event: self.paint(event, main))
+        self.bind('<B1-Motion>', lambda event: self.paint(event, main))
+        self.bind('<ButtonRelease-1>',lambda event: self.end_shape(event, main))
     
     def make_shape(self, event:tk.Event, main:windows):
+        #delete redo list
+        self.redo = []
+
         if main.medium == 'Pen':
+            #If pen is selected, make a line
             line = Line()
             self.shapes.append(line)
             for i in self.shapes:
                 print(i)
             print(self.shapes)
         elif main.medium == 'Eraser':
+            #If Eraser is seleceted, erase lines
             eraser = Erase(main)
             self.shapes.append(eraser)
             for i in self.shapes:
@@ -191,14 +230,21 @@ class Drawing(tk.Canvas):
     def paint(self, event:tk.Event, parent:windows):
         x1, y1 = (event.x-1),(event.y-1)
         x2, y2 = (event.x+1),(event.y+1)
-        if len(self.shapes) > 0 and type(self.shapes[-1]) == Erase:
-            self.shapes[-1].add_point(event.x, event.y, self)
+        if len(self.shapes) > 0 :
+            #see if the shape has ended
+            if self.shapes[-1].end == True:
+                #make the shape instead
+                self.make_shape(event, parent)
+            else:
+                if type(self.shapes[-1]) == Erase:
+                    self.shapes[-1].add_point(event.x, event.y, self)
 
-        else:
-            if len(self.shapes) > 0 and type(self.shapes[-1]) == Line:
-                self.shapes[-1].add_point(event.x, event.y, self, parent)
+                elif type(self.shapes[-1]) == Line:
+                        self.shapes[-1].add_point(event.x, event.y, self, parent)
 
-
+    def end_shape(self, event:tk.Event, parent:windows):
+        if type(self.shapes[-1]) == Erase:
+            self.shapes[-1].end = True
 
 #Classes for toolbar menu
 class Pen():
@@ -241,20 +287,45 @@ class Line():
     def __init__(self):
         self.points = []
         self.lines = []
+        self.width = 1
+        self.color = 'black'
+        self.end = False
 
     def add_point(self, x, y, canvas: Drawing, main:windows):
         #make the line
         if len(self.points) != 0:
             x0, y0 = self.points[-1]['x'], self.points[-1]['y']
             line = canvas.create_line(x0, y0, x, y, fill=main.color, width=main.width)
+            #update color and width
+            self.width = main.width
+            self.color = main.color
+            #line = canvas.create_arc(x, y, x0, y0, fill=main.color, width=main.width, style=tk.ARC)
+
             self.lines.append(line)
 
         self.points.append({'x': x, 'y': y})
+
+    def remake(self, canvas:Drawing):
+        #get the first points
+        x, y = self.points[0]['x'], self.points[0]['y']
+
+        #iterate over all of the points and make a line for each
+        for i in self.points[1:]:
+            x0, y0 = i['x'], i['y']
+            #create the line
+            line = canvas.create_line(x0, y0, x, y, fill=self.color, width=self.width)
+            #Update the intitial x and y
+            x, y = x0, y0
+
+            self.lines.append(line)
+
+
 
 class Erase():
     def __init__(self):
         self.points = []
         self.lines = []
+        self.end = False
 
     def add_point(self, x, y, canvas: Drawing, main:windows):
         #make the line
