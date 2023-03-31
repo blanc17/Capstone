@@ -6,6 +6,12 @@ from reportlab.graphics import renderPDF, renderPM
 from PIL import Image, ImageTk
 from tkinter import colorchooser
 import re
+import sys
+#from colorutils import Color
+
+#change the recursion limit
+sys.setrecursionlimit(1000000)
+
 #definition for getting the svg file
 def get_svg(file:str):
     svg = svg2rlg(file)
@@ -24,6 +30,7 @@ class windows(tk.Tk):
         #special variables
         self.medium = 'Pen'
         self.color = 'black'
+        self.background = 'white'
         self.width = 1
         self.file = ''
         self.svg = ''
@@ -74,7 +81,7 @@ class windows(tk.Tk):
     def make_toolbar(self):
         tools = tk.Frame(self)
         #for B in (Pen, Eraser, Circle, Rectangle, Edit, Color, Width):
-        for B in (Pen, Eraser, Circle, Rectangle, Color, Width):
+        for B in (Pen, Eraser, Circle, Rectangle, Fill, Color, Width):
             button = B(tools,self)
             self.tools[B] = button
         tools.pack(anchor='n',fill='x')
@@ -153,15 +160,12 @@ class Open():
         #with canvas
         main.canvas.create_image(0,0,anchor=tk.NW, image=pimg)
         main.canvas.image = pimg
-        
-
-
 class Save():
     def __init__(self, button:tk.Menu, parent:windows):
         button.add_command(label='Save', command=self.save_file)
     def save_file(self):
         print('Save file')
-
+#Undo and redo for file
 class Undo():
     def __init__(self, button:tk.Menu, parent:windows):
         button.add_command(label='Undo', command =lambda:self.undo_action(parent))
@@ -176,10 +180,6 @@ class Undo():
             #delete the image from the canvas
             for l in last_action.lines:
                 parent.canvas.delete(l)
-
-            
-            
-
 class Redo():
     def __init__(self, button:tk.Menu, parent:windows):
         button.add_command(label='Redo', command=lambda:self.redo_action(parent))
@@ -197,17 +197,17 @@ class Redo():
             #     last_action.remake(parent.canvas)
             last_action.remake(parent.canvas)
 
-
 #Class for canvas frame
 class Drawing(tk.Canvas):
     def __init__(self, parent:tk.Frame, main:windows):
         tk.Canvas.__init__(self, parent)
-        self.configure(bg='white')
+        self.configure(bg=main.background)
         self.shapes = []
         self.redo = []
         self.bind('<Button-1>', lambda event: self.make_shape(event, main))
         self.bind('<B1-Motion>', lambda event: self.paint(event, main))
         self.bind('<ButtonRelease-1>',lambda event: self.end_shape(event, main))
+        #self.bind('<Motion>',lambda event: self.get_color(event, main))
     
     def make_shape(self, event:tk.Event, main:windows):
         #delete redo list
@@ -217,29 +217,26 @@ class Drawing(tk.Canvas):
             #If pen is selected, make a line
             line = Line()
             self.shapes.append(line)
-            for i in self.shapes:
-                print(i)
             print(self.shapes)
         elif main.medium == 'Eraser':
             #If Eraser is seleceted, erase lines
             eraser = Erase()
             self.shapes.append(eraser)
-            for i in self.shapes:
-                print(i)
             print(self.shapes)
         elif main.medium == 'Circle':
             #If circle, then make an oval
             oval = Oval(main, event.x, event.y)
             self.shapes.append(oval)
-            for i in self.shapes:
-                print(i)
             print(self.shapes)
         elif main.medium == 'Rectangle':
             #If square, then make a rectangle
             rect = Rect(main, event.x, event.y)
             self.shapes.append(rect)
-            for i in self.shapes:
-                print(i)
+            print(self.shapes)
+        elif main.medium == 'Fill':
+            #if fill, then recursively fill
+            fill = Bucket(main, event.x, event.y)
+            self.shapes.append(fill)
             print(self.shapes)
 
 
@@ -269,6 +266,17 @@ class Drawing(tk.Canvas):
         elif type(self.shapes[-1]) == Line:
             self.shapes[-1].end = True
 
+    # #TODO: test getting color
+    # def get_color(self, event:tk.Event, main:windows):
+    #     x, y = event.x, event.y
+    #     ids = self.find_overlapping(x, y, x, y)
+    #     if len(ids) == 0:
+    #         print(main.background)
+    #     else:
+    #         index = ids[-1]
+    #         color = self.itemcget(index, 'fill')
+    #         print(color)
+
 #Classes for toolbar menu
 class Pen():
     def __init__(self, parent:tk.Frame, window:windows):
@@ -286,14 +294,27 @@ class Rectangle():
     def __init__(self, parent:tk.Frame, window:windows):
         m = tk.Button(parent, text='Rectangle', command = lambda: window.set_medium('Rectangle'))
         m.pack(side='left',fill='none')
+class Fill():
+    def __init__(self, parent:tk.Frame, window:windows):
+        m = tk.Button(parent, text='Fill', command = lambda: window.set_medium('Fill'))
+        m.pack(side='left',fill='none')
 class Edit():
     def __init__(self, parent:tk.Frame, window:windows):
         m = tk.Button(parent, text='Edit', command = lambda: window.set_medium('Edit'))
         m.pack(side='left',fill='none')
 class Color():
     def __init__(self, parent:tk.Frame, window:windows):
-        m = tk.Button(parent, text='Color', command = window.set_color)
+        m = tk.Button(parent, text='Color', command = lambda: self.set_color(window))
         m.pack(side='left',fill='none')
+        self.color_view = tk.Entry(parent, bg = window.color, width=2)
+        self.color_view.pack(side='left', fill='none')
+    def set_color(self, main:windows):
+        #set the main color
+        color = colorchooser.askcolor(title='Choose color')[1]
+        main.color = "#" + color.partition("#")[2]
+        #set the background
+        self.color_view.configure(bg = main.color)
+        
 class Width():
     def __init__(self, parent:tk.Frame, main:windows):
         frame = tk.Frame(parent)
@@ -352,7 +373,7 @@ class Erase():
         #make the line
         if len(self.points) != 0:
             x0, y0 = self.points[-1]['x'], self.points[-1]['y']
-            line = canvas.create_line(x0, y0, x, y, fill='white', width=main.width)
+            line = canvas.create_line(x0, y0, x, y, fill=self.background, width=main.width)
             self.width = main.width
             self.lines.append(line)
 
@@ -366,7 +387,7 @@ class Erase():
         for i in self.points[1:]:
             x0, y0 = i['x'], i['y']
             #create the line
-            line = canvas.create_line(x0, y0, x, y, fill='white', width=self.width)
+            line = canvas.create_line(x0, y0, x, y, fill=self.background, width=self.width)
             #Update the intitial x and y
             x, y = x0, y0
 
@@ -421,7 +442,57 @@ class Rect():
         x0, y0 = self.end['x'], self.end['y']
         rect = canvas.create_rectangle(x0, y0, x, y, outline=self.color, width=self.width)
         self.lines.append(rect)
+class Bucket():
+    def __init__(self, main:windows, x:int, y:int):      
+        self.points = []
+        #set the original color
+        self.og_color = self.get_color(x, y, main)
+        self.new_color = main.color
+        print(self.new_color)
+        
+        #perform the painting operation
+        if self.og_color is not self.new_color:
+            self.paint(x, y, main.canvas, main)
 
+    def paint(self, x:int, y:int, canvas: Drawing, main:windows):
+        #get the color at the point specified
+        color = self.get_color(x, y, main)
+
+        #if the color of the points is the same as the original color
+        if color == self.og_color:
+            #change the color of the pixel
+            print(self.new_color)
+            r = canvas.create_rectangle(x, y, x, y, fill = self.new_color, outline=self.new_color)
+            self.points.append(r)
+
+            #recusively check the surrounding points
+            if self.og_color == self.get_color(x, y-1, main):
+                self.paint(x, y-1, canvas, main)
+            if self.og_color == self.get_color(x+1, y, main):
+                self.paint(x+1,y,canvas, main)
+            if self.og_color == self.get_color(x, y+1, main):
+                self.paint(x, y+1, canvas, main)
+            if self.og_color == self.get_color(x-1, y, main):
+                self.paint(x-1, y, canvas, main)
+
+    def get_color(self, x:int, y:int, main:windows):
+        ids = main.canvas.find_overlapping(x,y,x,y)
+        if len(ids) > 0:
+            index = ids[-1]
+            return main.canvas.itemcget(index, 'fill')
+        return main.background
+
+
+    # #TODO: test getting color
+    # def get_color(self, event:tk.Event, main:windows):
+    #     x, y = event.x, event.y
+    #     ids = self.find_overlapping(x, y, x, y)
+    #     if len(ids) == 0:
+    #         print(main.background)
+    #     else:
+    #         index = ids[-1]
+    #         color = self.itemcget(index, 'fill')
+    #         print(color)
 
 #run the program
 if __name__ == '__main__':
