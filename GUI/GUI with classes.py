@@ -10,7 +10,7 @@ import sys
 #from colorutils import Color
 
 #change the recursion limit
-sys.setrecursionlimit(1000000)
+#sys.setrecursionlimit(1000000)
 
 #definition for getting the svg file
 def get_svg(file:str):
@@ -153,7 +153,7 @@ class Open():
         else:
             main.image = main.file
     
-        #print the image
+        #plot the image
         img = Image.open(main.image)
         pimg = ImageTk.PhotoImage(img)
 
@@ -445,23 +445,24 @@ class Rect():
 class Bucket():
     def __init__(self, main:windows, x:int, y:int):      
         self.points = []
+        self.tuples = []
         #set the original color
         self.og_color = self.get_color(x, y, main)
         self.new_color = main.color
         print(self.new_color)
+        self.lines = ''
         
         #perform the painting operation
         if self.og_color is not self.new_color:
             self.paint(x, y, main.canvas, main)
 
-    def paint(self, x:int, y:int, canvas: Drawing, main:windows):
+    def paint2(self, x:int, y:int, canvas: Drawing, main:windows):
         #get the color at the point specified
         color = self.get_color(x, y, main)
 
         #if the color of the points is the same as the original color
         if color == self.og_color:
             #change the color of the pixel
-            print(self.new_color)
             r = canvas.create_rectangle(x, y, x, y, fill = self.new_color, outline=self.new_color)
             self.points.append(r)
 
@@ -475,12 +476,116 @@ class Bucket():
             if self.og_color == self.get_color(x-1, y, main):
                 self.paint(x-1, y, canvas, main)
 
+    #TODO: attempting painting with a polygon
+    def paint(self, x:int, y:int, canvas:Drawing, main:windows):
+            
+        #get the first point to fill in
+        y0 = self.get_first_point(x, y, canvas, main)
+        self.add(x, y0)
+
+        #get the rest of the points
+        self.get_points(x, y0, canvas, main)
+        print(self.points)
+        
+        # #attempt to try drawing with canvas
+        # self.points = [x, y-10, x+10, y, x, y+10, x-5, y+5]
+        #draw the points
+        canvas.create_polygon(self.points, outline=main.color, fill=main.color)
+
+    def get_first_point(self, x:int, y:int, canvas:Drawing, main:windows):
+        first_point = y
+        if y == 1:
+            return first_point
+        else:
+            #get the color at the point specified
+            color = self.get_color(x, y, main)
+            color2 = self.get_color(x, y-1, main)
+            #if the color is the same
+            if color == color2:
+                #recursion 
+                first_point = self.get_first_point(x, y-1, canvas, main)
+                return first_point
+            else:
+                return first_point
+        
+    
+    #get points to add to the list
+    def get_points(self, x:int, y:int, canvas:Drawing, main:windows):
+        print(x, y)
+        print(self.tuples)
+        #if the tuple has not been used yet
+        if (x, y) not in self.tuples or len(self.tuples) == 1:
+            self.add(x, y)
+            #look at surrounding points in a circle
+            if self.og_color == self.get_color(x, y-1, main) and (x, y-1) not in self.tuples:
+                #up
+                print('up')
+                #self.add(x, y-1)
+                self.get_points(x, y-1, canvas, main)
+            else:
+                if self.og_color == self.get_color(x+1, y, main) and (x+1, y) not in self.tuples:
+                    #right
+                    print('right')
+                    #self.add(x+1, y)
+                    self.get_points(x+1, y, canvas, main)
+                else:
+                    if self.og_color == self.get_color(x, y+1, main) and (x, y+1) not in self.tuples:
+                        #down
+                        print('down')
+                        #self.add(x, y+1)
+                        self.get_points(x, y+1, canvas, main)
+                    else:
+                        if self.og_color == self.get_color(x-1, y, main) and (x-1, y) not in self.tuples:
+                            #left
+                            print('left')
+                            #self.add(x-1, y)
+                            self.get_points(x-1, y, canvas, main)
+        #if the recurion has not made it's way back to the start
+        # if x != self.points[0] or y != self.points[1] or len(self.points) <= 2:
+        #     print('in')
+        #     #look at all points in a circle from the given point
+        #     if self.og_color == self.get_color(x, y-1, main):
+        #         print('up')
+        #         if len(self.points) <=2 or x is not self.points[-2] or y-1 is not self.points[-1]:
+        #             print('up')
+        #             self.add(x, y-1)
+        #             self.get_points(x, y-1, canvas, main)
+        #     else:
+        #         print('in')
+        #         if self.og_color == self.get_color(x+1, y, main):
+        #             print('right')
+        #             if len(self.points) <=2 or x+1 is not self.points[-2] or y is not self.points[-1]:
+        #                 print('right')
+        #                 self.add(x+1, y)
+        #                 self.get_points(x+1, y, canvas, main)
+        #         else:
+        #             if self.og_color == self.get_color(x, y+1, main):
+        #                 print('down')
+        #                 if len(self.points) <=2 or x is not self.points[-2] or y+1 is not self.points[-1]:
+        #                     print('down')
+        #                     self.add(x, y+1)
+        #                     self.get_points(x, y+1, canvas, main)
+        #             else:
+        #                 if self.og_color == self.get_color(x-1, y, main):
+        #                     print('left')
+        #                     if len(self.points) <=2 or x-1 is not self.points[-2] or y is not self.points[-1]:
+        #                         print('left')
+        #                         self.add(x-1, y)
+        #                         self.get_points(x-1, y, canvas, main)
+    
+    #get the color of a pixel
     def get_color(self, x:int, y:int, main:windows):
         ids = main.canvas.find_overlapping(x,y,x,y)
         if len(ids) > 0:
             index = ids[-1]
             return main.canvas.itemcget(index, 'fill')
         return main.background
+
+    #add points to list
+    def add(self, x, y):
+        self.points.append(x)
+        self.points.append(y)
+        self.tuples.append((x, y))
 
 
     # #TODO: test getting color
