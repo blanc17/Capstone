@@ -1,12 +1,13 @@
-import tkinter as tk
-from pyaxidraw import axidraw
-from tkinter.filedialog import askopenfilename, asksaveasfilename
-from svglib.svglib import svg2rlg
-from reportlab.graphics import renderPDF, renderPM
 from PIL import Image, ImageTk
-from tkinter import colorchooser
+from pyaxidraw import axidraw
+import os
 import re
-import sys
+from reportlab.graphics import renderPDF, renderPM
+from svglib.svglib import svg2rlg
+import tkinter as tk
+from tkinter import colorchooser
+from tkinter.filedialog import askopenfilename, asksaveasfilename
+#import sys
 #from colorutils import Color
 
 #change the recursion limit
@@ -121,7 +122,6 @@ class windows(tk.Tk):
             ad.plot_run()
         
     
-
 #Classes for file menu
 class New():
     def __init__(self, button:tk.Menu, parent:windows):
@@ -146,6 +146,9 @@ class Open():
             ]
         )
 
+        if not main.file:
+            return
+
         #set the image
         if '.svg' in main.file:
             #if .svg, get the file and then set the image
@@ -164,9 +167,36 @@ class Open():
         main.canvas.image = pimg
 class Save():
     def __init__(self, button:tk.Menu, parent:windows):
-        button.add_command(label='Save', command=self.save_file)
-    def save_file(self):
-        print('Save file')
+        button.add_command(label='Save', command=lambda:self.save_file(parent))
+    def save_file(self, main:windows):
+        filename = os.path.realpath(os.path.dirname(__file__)) + '\\'+'temp'
+        print(filename)
+        
+        #save postscript image
+        main.canvas.postscript(file=filename + '.eps')
+        #use PIL to convert to PNG
+        img = Image.open(filename + '.eps')
+        img.save(filename + '.png', 'png')
+
+        # #get the file 
+        # file = asksaveasfilename(
+        #     filetypes=[
+        #         ('Scalabale Vector Graphics', '*.svg'),
+        #         ('PNG', '*.png'),
+        #         ('Image',  '*.img'),
+        #         ('Bitmap', '*.bmp'),
+        #         ('JPEG', '*.jpeg'),
+        #         ('All Files', '*.*')
+        #     ]
+        # )
+
+        # if not file:
+        #     return
+        
+        # main.canvas.postscript(file='temp.eps')
+        # img = Image.open('temp.eps')
+        # img.save(file, 'png')
+
 #Undo and redo for file
 class Undo():
     def __init__(self, button:tk.Menu, parent:windows):
@@ -261,17 +291,6 @@ class Drawing(tk.Canvas):
         elif type(self.shapes[-1]) == Line:
             self.shapes[-1].end = True
 
-    # #TODO: test getting color
-    # def get_color(self, event:tk.Event, main:windows):
-    #     x, y = event.x, event.y
-    #     ids = self.find_overlapping(x, y, x, y)
-    #     if len(ids) == 0:
-    #         print(main.background)
-    #     else:
-    #         index = ids[-1]
-    #         color = self.itemcget(index, 'fill')
-    #         print(color)
-
 #Classes for toolbar menu
 class Pen():
     def __init__(self, parent:tk.Frame, window:windows):
@@ -308,8 +327,7 @@ class Color():
         color = colorchooser.askcolor(title='Choose color')[1]
         main.color = "#" + color.partition("#")[2]
         #set the background
-        self.color_view.configure(bg = main.color)
-        
+        self.color_view.configure(bg = main.color)       
 class Width():
     def __init__(self, parent:tk.Frame, main:windows):
         frame = tk.Frame(parent)
@@ -456,136 +474,6 @@ class Rect():
             rect = canvas.create_rectangle(x0, y0, x, y, outline=self.color, width=self.width, fill = self.color)
 
         self.lines.append(rect)
-# class Bucket():
-#     def __init__(self, main:windows, x:int, y:int):      
-#         self.points = []
-#         self.tuples = []
-#         #set the original color
-#         self.og_color = self.get_color(x, y, main)
-#         self.new_color = main.color
-#         print(self.new_color)
-#         self.lines = ''
-        
-#         #perform the painting operation
-#         if self.og_color is not self.new_color:
-#             self.paint(x, y, main.canvas, main)
-
-    # def paint2(self, x:int, y:int, canvas: Drawing, main:windows):
-    #     #get the color at the point specified
-    #     color = self.get_color(x, y, main)
-
-    #     #if the color of the points is the same as the original color
-    #     if color == self.og_color:
-    #         #change the color of the pixel
-    #         r = canvas.create_rectangle(x, y, x, y, fill = self.new_color, outline=self.new_color)
-    #         self.points.append(r)
-
-    #         #recusively check the surrounding points
-    #         if self.og_color == self.get_color(x, y-1, main):
-    #             self.paint(x, y-1, canvas, main)
-    #         if self.og_color == self.get_color(x+1, y, main):
-    #             self.paint(x+1,y,canvas, main)
-    #         if self.og_color == self.get_color(x, y+1, main):
-    #             self.paint(x, y+1, canvas, main)
-    #         if self.og_color == self.get_color(x-1, y, main):
-    #             self.paint(x-1, y, canvas, main)
-
-    # #TODO: attempting painting with a polygon
-    # def paint(self, x:int, y:int, canvas:Drawing, main:windows):
-            
-    #     #get the first point to fill in
-    #     y0 = self.get_first_point(x, y, canvas, main)
-    #     self.add(x, y0)
-
-    #     #get the rest of the points
-    #     self.get_points(x, y0, canvas, main)
-    #     print(self.points)
-        
-    #     # #attempt to try drawing with canvas
-    #     # self.points = [x, y-10, x+10, y, x, y+10, x-5, y+5]
-    #     #draw the points
-    #     canvas.create_polygon(self.points, outline=main.color, fill=main.color)
-
-    # def get_first_point(self, x:int, y:int, canvas:Drawing, main:windows):
-    #     first_point = y
-    #     if y == 1:
-    #         return first_point
-    #     else:
-    #         #get the color at the point specified
-    #         color = self.get_color(x, y, main)
-    #         color2 = self.get_color(x, y-1, main)
-    #         #if the color is the same
-    #         if color == color2:
-    #             #recursion 
-    #             first_point = self.get_first_point(x, y-1, canvas, main)
-    #             return first_point
-    #         else:
-    #             return first_point
-        
-    
-    # #get points to add to the list
-    # def get_points(self, x:int, y:int, canvas:Drawing, main:windows):
-    #     print(x, y)
-    #     print(self.tuples)
-    #     #if the tuple has not been used yet
-    #     if (x, y) not in self.tuples or len(self.tuples) == 1:
-    #         self.add(x, y)
-    #         #look at surrounding points in a circle
-    #         if self.og_color == self.get_color(x, y-1, main) and (x, y-1) not in self.tuples:
-    #             #up
-    #             print('up')
-    #             #self.add(x, y-1)
-    #             self.get_points(x, y-1, canvas, main)
-    #         else:
-    #             if self.og_color == self.get_color(x+1, y, main) and (x+1, y) not in self.tuples:
-    #                 #right
-    #                 print('right')
-    #                 #self.add(x+1, y)
-    #                 self.get_points(x+1, y, canvas, main)
-    #             else:
-    #                 if self.og_color == self.get_color(x, y+1, main) and (x, y+1) not in self.tuples:
-    #                     #down
-    #                     print('down')
-    #                     #self.add(x, y+1)
-    #                     self.get_points(x, y+1, canvas, main)
-    #                 else:
-    #                     if self.og_color == self.get_color(x-1, y, main) and (x-1, y) not in self.tuples:
-    #                         #left
-    #                         print('left')
-    #                         #self.add(x-1, y)
-    #                         self.get_points(x-1, y, canvas, main)
-        #if the recurion has not made it's way back to the start
-        # if x != self.points[0] or y != self.points[1] or len(self.points) <= 2:
-        #     print('in')
-        #     #look at all points in a circle from the given point
-        #     if self.og_color == self.get_color(x, y-1, main):
-        #         print('up')
-        #         if len(self.points) <=2 or x is not self.points[-2] or y-1 is not self.points[-1]:
-        #             print('up')
-        #             self.add(x, y-1)
-        #             self.get_points(x, y-1, canvas, main)
-        #     else:
-        #         print('in')
-        #         if self.og_color == self.get_color(x+1, y, main):
-        #             print('right')
-        #             if len(self.points) <=2 or x+1 is not self.points[-2] or y is not self.points[-1]:
-        #                 print('right')
-        #                 self.add(x+1, y)
-        #                 self.get_points(x+1, y, canvas, main)
-        #         else:
-        #             if self.og_color == self.get_color(x, y+1, main):
-        #                 print('down')
-        #                 if len(self.points) <=2 or x is not self.points[-2] or y+1 is not self.points[-1]:
-        #                     print('down')
-        #                     self.add(x, y+1)
-        #                     self.get_points(x, y+1, canvas, main)
-        #             else:
-        #                 if self.og_color == self.get_color(x-1, y, main):
-        #                     print('left')
-        #                     if len(self.points) <=2 or x-1 is not self.points[-2] or y is not self.points[-1]:
-        #                         print('left')
-        #                         self.add(x-1, y)
-        #                         self.get_points(x-1, y, canvas, main)
     
     #get the color of a pixel
     def get_color(self, x:int, y:int, main:windows):
@@ -600,18 +488,6 @@ class Rect():
         self.points.append(x)
         self.points.append(y)
         self.tuples.append((x, y))
-
-
-    # #TODO: test getting color
-    # def get_color(self, event:tk.Event, main:windows):
-    #     x, y = event.x, event.y
-    #     ids = self.find_overlapping(x, y, x, y)
-    #     if len(ids) == 0:
-    #         print(main.background)
-    #     else:
-    #         index = ids[-1]
-    #         color = self.itemcget(index, 'fill')
-    #         print(color)
 
 #run the program
 if __name__ == '__main__':
