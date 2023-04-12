@@ -1,9 +1,10 @@
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageGrab
 from pyaxidraw import axidraw
 import os
 import re
 from reportlab.graphics import renderPDF, renderPM
 from svglib.svglib import svg2rlg
+import time
 import tkinter as tk
 from tkinter import colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
@@ -35,6 +36,7 @@ class windows(tk.Tk):
         self.width = 1
         self.fill = tk.IntVar()
         self.file = ''
+        self.bmp = ''
         self.svg = ''
         self.image = ''
 
@@ -53,15 +55,14 @@ class windows(tk.Tk):
         self.canvas.pack(side='top', fill='both',expand=True)
 
         #create a button for packing
-        self.btn_plt = tk.Button()
-        self.make_plot()
+        self.btn_plot = Draw_Button(self)
+        self.btn_plot.pack(side='bottom', anchor='se')
 
     def reset_files(self):
         self.file = ''
         self.svg = ''
         self.image = ''
 
-        
     def make_menu(self):
         
         menu = tk.Menu()
@@ -89,10 +90,6 @@ class windows(tk.Tk):
             self.tools[B] = button
         tools.pack(anchor='n',fill='x')
 
-    def make_plot(self):
-        self.btn_plot = tk.Button(master=self, text='Draw', command=self.draw_file)
-        self.btn_plot.pack(side='bottom', anchor='se')
-
     def set_medium(self, medium):
         self.medium = medium
         print(self.medium)
@@ -113,15 +110,47 @@ class windows(tk.Tk):
         entry.delete(0, tk.END)
         entry.insert(0, num)
 
-
     def draw_file(self):
         #if already a .svg file, print
         if '.svg' in self.file:
             ad = axidraw.AxiDraw()
             ad.plot_setup(self.file)
             ad.plot_run()
-        
-    
+
+    def set_file(self):
+        file = os.path.realpath(os.path.dirname(__file__)) + '/temp.png'
+        #change the file name
+        file = file.replace('\\', '/')
+
+        #get the coordinate
+        x = self.canvas.winfo_rootx()
+        y = self.canvas.winfo_rooty()
+        x1 = x + self.canvas.winfo_width()
+        y1 = y + self.canvas.winfo_height()
+
+        #delay for one second
+        time.sleep(1)
+        #TODO: consider making an error pop-up for non-supported files (svg, img)
+        ImageGrab.grab().crop((x, y, x1, y1)).save(file)
+        self.file = file
+
+    def set_bmp(self):
+        file = os.path.realpath(os.path.dirname(__file__)) + '/temp.bmp'
+        #change the file name
+        file = file.replace('\\', '/')
+
+        #get the coordinate
+        x = self.canvas.winfo_rootx()
+        y = self.canvas.winfo_rooty()
+        x1 = x + self.canvas.winfo_width()
+        y1 = y + self.canvas.winfo_height()
+
+        #delay for one second
+        time.sleep(1)
+        #TODO: consider making an error pop-up for non-supported files (svg, img)
+        ImageGrab.grab().crop((x, y, x1, y1)).save(file)
+        self.bmp = file
+          
 #Classes for file menu
 class New():
     def __init__(self, button:tk.Menu, parent:windows):
@@ -169,33 +198,37 @@ class Save():
     def __init__(self, button:tk.Menu, parent:windows):
         button.add_command(label='Save', command=lambda:self.save_file(parent))
     def save_file(self, main:windows):
-        filename = os.path.realpath(os.path.dirname(__file__)) + '\\'+'temp'
-        print(filename)
-        
-        #save postscript image
-        main.canvas.postscript(file=filename + '.eps')
-        #use PIL to convert to PNG
-        img = Image.open(filename + '.eps')
-        img.save(filename + '.png', 'png')
+        # filename = os.path.realpath(os.path.dirname(__file__)) + '/temp.png'
+        # #change the file name
+        # filename = filename.replace('\\', '/')
 
-        # #get the file 
-        # file = asksaveasfilename(
-        #     filetypes=[
-        #         ('Scalabale Vector Graphics', '*.svg'),
-        #         ('PNG', '*.png'),
-        #         ('Image',  '*.img'),
-        #         ('Bitmap', '*.bmp'),
-        #         ('JPEG', '*.jpeg'),
-        #         ('All Files', '*.*')
-        #     ]
-        # )
+        #get the file 
+        file = asksaveasfilename(
+            filetypes=[
+                ('PNG', '*.png'),
+                ('Bitmap', '*.bmp'),
+                ('JPEG', '*.jpeg'),
+                ('All Files', '*.*')
+            ]
+        )
 
-        # if not file:
-        #     return
-        
-        # main.canvas.postscript(file='temp.eps')
-        # img = Image.open('temp.eps')
-        # img.save(file, 'png')
+        if not file:
+            return
+        print(file)
+
+        #ATTEMPT USING IMAGEGRAB
+        #IT WORKS
+        x = main.canvas.winfo_rootx()
+        y = main.canvas.winfo_rooty()
+        x1 = x + main.canvas.winfo_width()
+        y1 = y + main.canvas.winfo_height()
+
+        #delay for one second
+        time.sleep(1)
+        #TODO: consider making an error pop-up for non-supported files (svg, img)
+        ImageGrab.grab().crop((x, y, x1, y1)).save(file)
+        #set the main file
+        main.file = file
 
 #Undo and redo for file
 class Undo():
@@ -488,6 +521,28 @@ class Rect():
         self.points.append(x)
         self.points.append(y)
         self.tuples.append((x, y))
+
+class Draw_Button(tk.Button):
+    #initialize
+    def __init__(self, main: windows):
+        tk.Button.__init__(self, main, text='Draw', command = lambda:self.draw_file(main))
+        #set the main file
+        main.set_file()
+
+    def draw_file(self, main:windows):
+        #set the bitmap
+        main.bmp = main.set_bmp()
+        #set the svg
+
+
+        # #if already a .svg file, print
+        # if '.svg' in main.file:
+        #     ad = axidraw.AxiDraw()
+        #     ad.plot_setup(self.file)
+        #     ad.plot_run()
+        # #turn the file into an svg
+        # else:
+        #     print('make file')
 
 #run the program
 if __name__ == '__main__':
