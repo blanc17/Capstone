@@ -8,6 +8,8 @@ import time
 import tkinter as tk
 from tkinter import colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
+import webbrowser
+
 #import sys
 #from colorutils import Color
 
@@ -530,10 +532,14 @@ class Draw_Button(tk.Button):
         main.set_file()
 
     def draw_file(self, main:windows):
-        #set the bitmap
-        main.bmp = main.set_bmp()
-        #set the svg
+        #set the bitmap and image
+        main.set_bmp()
+        main.set_file()
 
+        #open a top-level window
+        self.open_web()
+        window = Draw_Window(main)
+        window.mainloop()
 
         # #if already a .svg file, print
         # if '.svg' in main.file:
@@ -543,6 +549,76 @@ class Draw_Button(tk.Button):
         # #turn the file into an svg
         # else:
         #     print('make file')
+    def open_web(self):
+        svg_url = 'https://svgtrace.com/png-to-svg'
+        webbrowser.open(svg_url)
+class Draw_Window(tk.Toplevel):
+    #initialize
+    def __init__(self, main:windows):
+        tk.Toplevel.__init__(self, main)
+        self.title('Draw the Image')
+
+        #file name
+        file = os.path.realpath(os.path.dirname(__file__)) + '/temp.png'
+        #change the file name
+        file = file.replace('\\', '/')
+
+        explain_frame = tk.Frame(self)
+        #make a text box for explaining the process
+        text = tk.Label(explain_frame, anchor='w', text='In the svg converter, upload the file "' + file + '".')
+        text.pack(expand=True, fill='x', side='top')
+        text = tk.Label(explain_frame, anchor='w', text='Select at most four colors for the creation of the svg.\nType the hexcodes for each color in the boxes below')
+        text.pack(expand=True, fill='x', side='top')
+        #make the frame for containing the colors
+        frame = tk.Frame(explain_frame)
+        self.colors = []
+        self.color_frame(frame)
+        frame.pack(expand=True, fill='x', side='top')
+        #final instructions
+        text = tk.Label(explain_frame, anchor='w', text='When asked to choose a file, select the svg created by the converter.')
+        text.pack(expand=True, fill='x', side='top')
+        explain_frame.pack(expand=True, fill='x', side='top')
+        #add button to upload the svg
+        frm_button = tk.Frame(self)
+        frm_button.pack(expand=True, fill='x', side='bottom')
+        self.file = ''
+        button = tk.Button(self, text='Upload svg', command=self.select_svg)
+        button.pack(expand=False, fill='none', side='right')
+
+    #fill color frame
+    def color_frame(self, frame:tk.Frame):
+        for i in range(0, 4):
+            c = Hex_Color(frame)
+            self.colors.append(c)
+            c.pack(expand=True, fill='x', side='top')
+
+    #choose the svg
+    def select_svg(self):
+        #get the file 
+        self.file = askopenfilename(
+            filetypes=[
+                ('Scalabale Vector Graphics', '*.svg'),
+                ('Images', '*.png *.img *.bmp *.jpeg'),
+                ('All Files', '*.*')
+            ]
+        )
+        if not self.file:
+            return
+
+        #TODO: finish the method so once an image is uploaded it is there
+
+     
+class Hex_Color(tk.Frame):
+    #initialize
+    def __init__(self, parent:tk.Frame):
+        tk.Frame.__init__(self, parent)
+        #insert an entry box
+        self.entry = tk.Entry(self)
+        self.entry.pack(expand=False, fill='none', side='left')
+        text = tk.Label(self, anchor='w', text=' -> ')
+        text.pack(expand=False, fill='none', side='left')
+        self.color = tk.Label(self, anchor='w', text='')
+        self.color.pack(expand=False, fill='none', side='left')
 
 #run the program
 if __name__ == '__main__':
