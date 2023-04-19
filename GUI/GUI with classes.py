@@ -5,6 +5,7 @@ import re
 from reportlab.graphics import renderPDF, renderPM
 from svglib.svglib import svg2rlg
 import time
+import random
 import tkinter as tk
 from tkinter import colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
@@ -99,6 +100,58 @@ class windows(tk.Tk):
     def set_color(self):
         color = colorchooser.askcolor(title='Choose color')[1]
         self.color = "#" + color.partition("#")[2]
+        #RANDOM
+# canvas.pack & canvas.bind(<ButtonPress>, button)
+
+   def_rand_color(self):
+
+   def rand_oval(self, canvas: Drawing, main:windows):
+x1 = random.randrange(0,Canvas size)
+y1 = random.randrange(0,Canvas size)
+x2 = random.randrange(0,Canvas size)
+y2 = random.randrange(0,Canvas size)
+canvas.create_oval(x1,y1,x2,y2, fill=' ')
+
+   def rand_rectangle(self, canvas:Drawing, main:windows):
+x1 = random.randrange(0,Canvas size)
+y1 = random.randrange(0,Canvas size)
+x2 = random.randrange(0,Canvas size)
+y2 = random.randrange(0,Canvas size)
+canvas.create_rectangle(x1,y1,x2,y2, outline = ' ', fill = ' ', width =2);
+
+    #based on motion of mouse
+    def mouse_roll(self, canvas: Drawing, main:windows):
+   
+    def rand_line(self, canvas: Drawing, main:windows):
+x1 = random.randrange(0,Canvas size)
+y1 = random.randrange(0,Canvas size)
+x2 = random.randrange(0,Canvas size)
+y2 = random.randrange(0,Canvas size)
+canvas.create_line(x1,y1,x2,y2, outline = ' ', fill = ' ', width =2)
+
+   def rand_polygon(self, canvas: Drawing, main: windows):
+for i in range(0,200):
+          x1=i+random.randrange(0,300)
+          y1=i+random.randrange(0,300)
+          x2=i+random.randrange(0,300)
+          y2=i+random.randrange(0,300)
+          x3=i+random.randrange(0,300)
+          y3=i+random.randrange(0,300)
+          x4=i+random.randrange(0,300)
+          y4=i+random.randrange(0,300)
+          x5=i+random.randrange(0,300)
+          y5=i+random.randrange(0,300)
+          x6=i+random.randrange(0,300)
+          y6=i+random.randrange(0,300)
+
+ pt = {x1,y1,x2,y2,x3,y3,x4,y4,x5,y5,x6,y6}
+ canvas.create_polygon(pt,outline = ' ', fill = ' ', width =2)
+#get input from user determine how many objects?
+#determine theme (shapes, lines, combo, number,medium)
+#user determines: medium, colors, number of shapes/lines, shape and/or lines)
+
+    def set_theme(self,event:tk.Event,entry:tk.Entry):
+
 
     def set_width(self, event:tk.Event, entry:tk.Entry):
 
@@ -373,6 +426,21 @@ class Width():
         m.bind('<KeyRelease>', lambda event: main.set_width(event, m))
         m.insert(0, '1')
         frame.pack(side='left',fill='none')
+#class for Random tool bar menu?
+Class Random():
+    def __init__(self, parent:tk.Frame, window:windows):
+m = tk.Button(parent, text = 'Random', command = lambda: window.set_theme('Random'))
+m.pack(side ='left, fill = 'none')
+
+# window:windows Random
+
+Class Random():
+    def __init__(self, parent:tk.Frame, windows:windows):
+m = tk.Button(parent, text = 'Random', command = lambda: self.set_theme(window) )
+
+#class for RandShapes
+class RandImage():
+   def __init__(self):
 
 #classes for shapes drawn
 class Line():
