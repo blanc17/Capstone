@@ -1,6 +1,7 @@
 from PIL import Image, ImageTk, ImageGrab
 from pyaxidraw import axidraw
 import os
+import random
 import re
 from reportlab.graphics import renderPDF, renderPM
 from svglib.svglib import svg2rlg
@@ -57,8 +58,7 @@ class windows(tk.Tk):
         self.canvas.pack(side='top', fill='both',expand=True)
 
         #create a button for packing
-        self.btn_plot = Draw_Button(self)
-        self.btn_plot.pack(side='bottom', anchor='se')
+        self.make_bottom_bar()
 
     def reset_files(self):
         self.file = ''
@@ -92,6 +92,16 @@ class windows(tk.Tk):
             self.tools[B] = button
         tools.pack(anchor='n',fill='x')
 
+    def make_bottom_bar(self):
+        tools = tk.Frame(self)
+        #for b in the random options (Rand_Line, Rand_Rectangle, Rand_Oval, Rand_Polygon)
+        for B in (Rand_Line, Rand_Rectangle, Rand_Oval, Rand_Polygon):
+            button = B(tools, self)
+            self.tools[B] = button
+        tools.pack(anchor='n', fill='x')
+        button = Draw_Button(tools, self)
+        button.pack(anchor='e', fill='none', side='right')
+    
     def set_medium(self, medium):
         self.medium = medium
         print(self.medium)
@@ -152,7 +162,8 @@ class windows(tk.Tk):
         #TODO: consider making an error pop-up for non-supported files (svg, img)
         ImageGrab.grab().crop((x, y, x1, y1)).save(file)
         self.bmp = file
-          
+
+
 #Classes for file menu
 class New():
     def __init__(self, button:tk.Menu, parent:windows):
@@ -524,9 +535,45 @@ class Rect():
         self.points.append(y)
         self.tuples.append((x, y))
 
+#classes for random shapes
+class Rand_Line():
+    #init
+    def __init__(self, parent:tk.Frame, main:windows):
+        m=tk.Button(parent, text='Random Line', command=lambda: self.draw(main))
+        m.pack(side='left',fill='none')
+    #draw the line
+    def draw(self, main:windows):
+        shape = RLine(main)
+        main.canvas.shapes.append(shape)
+class Rand_Rectangle():
+    #init
+    def __init__(self, parent:tk.Frame, main:windows):
+        m=tk.Button(parent, text='Random Rectangle', command=lambda: self.draw(main))
+        m.pack(side='left',fill='none')
+    #draw the shape
+    def draw(self, main:windows):
+        shape = RRect(main)
+        main.canvas.shapes.append(shape)
+class Rand_Oval():
+    #initialize
+    def __init__(self, parent: tk.Frame, main:windows):
+        m=tk.Button(parent, text='Random Oval', command=lambda: self.draw(main))
+        m.pack(side='left',fill='none')
+    def draw(self, main:windows):
+        shape = ROval(main)
+        main.canvas.shapes.append(shape)
+class Rand_Polygon():
+    #initialize
+    def __init__(self, parent: tk.Frame, main:windows):
+        m=tk.Button(parent, text='Random Polygon', command=lambda: self.draw(main))
+        m.pack(side='left',fill='none')
+    def draw(self, main:windows):
+        shape = RPoly(main)
+        main.canvas.shapes.append(shape)
+
 class Draw_Button(tk.Button):
     #initialize
-    def __init__(self, main: windows):
+    def __init__(self, frame: tk.Frame, main: windows):
         tk.Button.__init__(self, main, text='Draw', command = lambda:self.draw_file(main))
         #set the main file
         main.set_file()
@@ -558,26 +605,13 @@ class Draw_Window(tk.Toplevel):
         tk.Toplevel.__init__(self, main)
         self.title('Draw the Image')
 
-        #file name
-        file = os.path.realpath(os.path.dirname(__file__)) + '/temp.png'
-        #change the file name
-        file = file.replace('\\', '/')
-
-        explain_frame = tk.Frame(self)
+        #fill the frame
         #make a text box for explaining the process
-        text = tk.Label(explain_frame, anchor='w', text='In the svg converter, upload the file "' + file + '".')
-        text.pack(expand=True, fill='x', side='top')
-        text = tk.Label(explain_frame, anchor='w', text='Select at most four colors for the creation of the svg.\nType the hexcodes for each color in the boxes below')
-        text.pack(expand=True, fill='x', side='top')
-        #make the frame for containing the colors
-        frame = tk.Frame(explain_frame)
+        explain_frame = tk.Frame(self)
         self.colors = []
-        self.color_frame(frame)
-        frame.pack(expand=True, fill='x', side='top')
-        #final instructions
-        text = tk.Label(explain_frame, anchor='w', text='When asked to choose a file, select the svg created by the converter.')
-        text.pack(expand=True, fill='x', side='top')
+        self.fill_frame(explain_frame)
         explain_frame.pack(expand=True, fill='x', side='top')
+
         #add button to upload the svg
         frm_button = tk.Frame(self)
         frm_button.pack(expand=True, fill='x', side='bottom')
@@ -585,9 +619,30 @@ class Draw_Window(tk.Toplevel):
         button = tk.Button(self, text='Upload svg', command=self.select_svg)
         button.pack(expand=False, fill='none', side='right')
 
+    #fill the frame
+    def fill_frame(self, frame:tk.Frame):
+        #file name
+        file = os.path.realpath(os.path.dirname(__file__)) + '/temp.png'
+        #change the file name
+        file = file.replace('\\', '/')
+
+        #insert the text
+        text = tk.Label(frame, anchor='w', text='In the svg converter, upload the file "' + file + '".')
+        text.pack(expand=True, fill='x', side='top')
+        text = tk.Label(frame, anchor='w', text='Select at most three colors for the creation of the svg.\nType the hexcodes for each color in the boxes below')
+        text.pack(expand=True, fill='x', side='top')
+        #make the frame for containing the colors
+        frame = tk.Frame(frame)
+        self.color_frame(frame)
+        frame.pack(expand=True, fill='x', side='top')
+        #final instructions
+        text = tk.Label(frame, anchor='w', text='When asked to choose a file, select the svg created by the converter.')
+        text.pack(expand=True, fill='x', side='top')
+
+
     #fill color frame
     def color_frame(self, frame:tk.Frame):
-        for i in range(0, 4):
+        for i in range(0, 3):
             c = Hex_Color(frame)
             self.colors.append(c)
             c.pack(expand=True, fill='x', side='top')
@@ -605,9 +660,7 @@ class Draw_Window(tk.Toplevel):
         if not self.file:
             return
 
-        #TODO: finish the method so once an image is uploaded it is there
-
-     
+        #TODO: finish the method so once an image is uploaded it is there 
 class Hex_Color(tk.Frame):
     #initialize
     def __init__(self, parent:tk.Frame):
@@ -615,10 +668,110 @@ class Hex_Color(tk.Frame):
         #insert an entry box
         self.entry = tk.Entry(self)
         self.entry.pack(expand=False, fill='none', side='left')
+        self.entry.bind('<Return>', lambda event: self.show_color(event))
+        self.entry.bind('<Tab>', lambda event: self.show_color(event))
+        self.entry.bind('<Enter>', lambda event: self.show_color(event))
+        self.entry.bind('<Leave>', lambda event: self.show_color(event))
         text = tk.Label(self, anchor='w', text=' -> ')
         text.pack(expand=False, fill='none', side='left')
-        self.color = tk.Label(self, anchor='w', text='')
+        self.color = tk.Label(self, anchor='w', text='', width=10)
         self.color.pack(expand=False, fill='none', side='left')
+
+    #show the color
+    def show_color(self, event):
+        hex = self.entry.get()
+        if len(hex) == 0:
+            return
+        #if no #
+        if hex[0] != '#':
+            hex = '#' + hex
+        #set the background
+        self.color.configure(bg = hex)  
+
+class RLine():
+    #init
+    def __init__(self, main:windows):
+        self.x1 = random.randrange(0,main.canvas.winfo_width())
+        self.y1 = random.randrange(0,main.canvas.winfo_height())
+        self.x2 = random.randrange(0,main.canvas.winfo_width())
+        self.y2 = random.randrange(0,main.canvas.winfo_height())
+        self.color=main.color
+        #redo/undo items
+        self.lines = []
+        main.canvas.redo = []
+        #make the shape
+        shape = main.canvas.create_line(self.x1,self.y1,self.x2,self.y2, fill = self.color, width =2)
+        self.lines.append(shape)
+    #remake
+    def remake(self,canvas:Drawing):
+        shape = canvas.create_line(self.x1,self.y1,self.x2,self.y2, fill=self.color, width=2)
+        self.lines.append(shape)
+class RRect():
+    #init
+    def __init__(self, main:windows):
+        self.x1 = random.randrange(0,main.canvas.winfo_width())
+        self.y1 = random.randrange(0,main.canvas.winfo_height())
+        self.x2 = random.randrange(0,main.canvas.winfo_width())
+        self.y2 = random.randrange(0,main.canvas.winfo_height())
+        self.color=main.color
+        #redo/undo items
+        self.lines = []
+        main.canvas.redo = []
+        #make the shape
+        shape = main.canvas.create_rectangle(self.x1,self.y1,self.x2,self.y2, outline = self.color, fill = self.color)
+        self.lines.append(shape)
+    #remake
+    def remake(self, canvas:Drawing):
+        shape = canvas.create_rectangle(self.x1,self.y1,self.x2,self.y2, outline = self.color, fill = self.color)
+        self.lines.append(shape)
+class ROval():
+    #init
+    def __init__(self, main:windows):
+        self.x1 = random.randrange(0,main.canvas.winfo_width())
+        self.y1 = random.randrange(0,main.canvas.winfo_height())
+        self.x2 = random.randrange(0,main.canvas.winfo_width())
+        self.y2 = random.randrange(0,main.canvas.winfo_height())
+        self.color=main.color
+        #redo/undo items
+        self.lines = []
+        main.canvas.redo = []
+        #make the shape
+        shape = main.canvas.create_oval(self.x1,self.y1,self.x2,self.y2, fill=self.color, outline = self.color)
+        self.lines.append(shape)
+    def remake(self,canvas:Drawing):
+        shape = canvas.create_oval(self.x1,self.y1,self.x2,self.y2, fill=self.color, outline = self.color)
+        self.lines.append(shape)
+class RPoly():
+    #init
+    def __init__(self, main:windows):
+        self.x1, self.x2, self.x3, self.x4, self.x5, self.x6 =0,0,0,0,0,0
+        self.y1, self.y2, self.y3, self.y4, self.y5, self.y6 =0,0,0,0,0,0
+        self.color = main.color
+        #redo/undo items
+        self.lines = []
+        main.canvas.redo = []
+
+        #make the shape
+        self.x1=random.randrange(0,main.canvas.winfo_width())
+        self.y1=random.randrange(0,main.canvas.winfo_height())
+        self.x2=random.randrange(0,main.canvas.winfo_width())
+        self.y2=random.randrange(0,main.canvas.winfo_height())
+        self.x3=random.randrange(0,main.canvas.winfo_width())
+        self.y3=random.randrange(0,main.canvas.winfo_height())
+        self.x4=random.randrange(0,main.canvas.winfo_width())
+        self.y4=random.randrange(0,main.canvas.winfo_height())
+        self.x5=random.randrange(0,main.canvas.winfo_width())
+        self.y5=random.randrange(0,main.canvas.winfo_height())
+        self.x6=random.randrange(0,main.canvas.winfo_width())
+        self.y6=random.randrange(0,main.canvas.winfo_height())
+
+        self.pt = [self.x1,self.y1,self.x2,self.y2,self.x3,self.y3,self.x4,self.y4,self.x5,self.y5,self.x6,self.y6]
+        shape = main.canvas.create_polygon(self.pt,outline = self.color, fill = self.color, width =2)
+        self.lines.append(shape)
+    #def remake
+    def remake(self, canvas:Drawing):
+        shape = canvas.create_polygon(self.pt,outline = self.color, fill = self.color, width =2)
+        self.lines.append(shape)
 
 #run the program
 if __name__ == '__main__':
